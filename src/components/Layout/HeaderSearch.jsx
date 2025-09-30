@@ -1,13 +1,16 @@
 import React, { useState, useCallback, useRef } from "react";
-import { Input, Avatar, Button } from "antd";
+import { Input, Avatar, Button, message } from "antd";
 import { UserOutlined, AudioOutlined, BellOutlined, SearchOutlined } from "@ant-design/icons";
 import { getData } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 
 const HeaderSearch = () => {
   const [loading, setLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const searchTimeout = useRef(null);
   const navigate = useNavigate();
+  const inputRef = useRef(null);
+
   const searchVideos = async (value) => {
     try {
       setLoading(true);
@@ -33,11 +36,13 @@ const HeaderSearch = () => {
   };
 
   const handleSearch = (value) => {
+    setSearchValue(value);
     searchVideos(value);
   };
 
   const handleChange = (e) => {
     const value = e.target.value;
+    setSearchValue(value);
 
     // Clear previous timeout
     if (searchTimeout.current) {
@@ -70,6 +75,32 @@ const HeaderSearch = () => {
     }
   };
 
+  // Voice search handler
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      message.error("Browser tidak mendukung fitur voice recognition.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "id-ID";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.start();
+    message.info("Silakan bicara...");
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setSearchValue(transcript);
+      if (inputRef.current) {
+        inputRef.current.input.value = transcript;
+      }
+      searchVideos(transcript);
+    };
+    recognition.onerror = (event) => {
+      message.error("Voice recognition error: " + event.error);
+    };
+  };
+
   return (
     <div
       style={{
@@ -82,10 +113,12 @@ const HeaderSearch = () => {
     >
       <div style={{ display: "flex", alignItems: "center", width: "50%" }}>
         <Input.Search
+          ref={inputRef}
           placeholder="Cari video..."
           allowClear
           loading={loading}
           style={{ width: "100%" }}
+          value={searchValue}
           onSearch={handleSearch}
           onChange={handleChange}
           enterButton={
@@ -100,10 +133,9 @@ const HeaderSearch = () => {
             />
           }
         />
-        <AudioOutlined style={{ fontSize: "20px", marginLeft: "16px", cursor: "pointer", color: "#EA4D1E" }} />
+        <AudioOutlined onClick={handleVoiceSearch} style={{ fontSize: "20px", marginLeft: "16px", cursor: "pointer", color: "#EA4D1E" }} />
       </div>
       <div style={{ display: "flex", alignItems: "center", position: "absolute", right: "16px" }}>
-        <BellOutlined style={{ fontSize: "20px", marginRight: "16px", cursor: "pointer", color: "#EA4D1E" }} />
         <Avatar size={40} icon={<UserOutlined style={{ color: "white" }} />} onClick={() => navigate("/profile")} style={{ cursor: "pointer", backgroundColor: "#EA4D1E" }} />
       </div>
     </div>

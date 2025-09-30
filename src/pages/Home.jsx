@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Card, Row, Col, Button, Spin, Empty } from "antd";
+import { Typography, Card, Row, Col, Button, Spin, Empty, Dropdown, Modal, message } from "antd";
 import { useNavigate } from "react-router-dom";
-import { getData } from "../utils/api"; // Mengimpor utility API
+import { getData, deleteData } from "../utils/api"; // Mengimpor utility API
+import { EditOutlined, DeleteOutlined, MoreOutlined } from "@ant-design/icons";
 
 const { Title } = Typography;
 
@@ -71,7 +72,58 @@ const Home = () => {
     setThisMonthVideos(thisMonth.slice(0, 4));
   };
 
-  const renderVideoCards = (videoArray) => {
+  // Tambahkan handleDelete
+  const handleDelete = async (id) => {
+    try {
+      const response = await deleteData(`/api/playlist/${id}`);
+      if (response?.status === 204 || response?.message === "OK") {
+        message.success("Video berhasil dihapus");
+        // Refresh data
+        const response = await getData("/api/playlist/38");
+        if (response?.datas) {
+          const videos = response.datas.map((video) => ({
+            ...video,
+            created_at: new Date(video.created_at),
+          }));
+          setAllVideos(videos);
+          filterVideos(videos);
+        }
+      } else {
+        message.error("Gagal menghapus video");
+      }
+    } catch (error) {
+      message.error("Gagal menghapus video");
+    }
+  };
+
+  // Dropdown items
+  const getDropdownItems = (item) => [
+    {
+      key: "edit",
+      label: "Edit",
+      icon: <EditOutlined />,
+      onClick: () => navigate(`/edit-video/${item.id_play}`),
+    },
+    {
+      key: "delete",
+      label: "Hapus",
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: () => {
+        Modal.confirm({
+          title: "Apakah Anda yakin ingin menghapus video ini?",
+          content: "Tindakan ini tidak dapat dibatalkan.",
+          okText: "Ya",
+          okType: "danger",
+          cancelText: "Tidak",
+          onOk: () => handleDelete(item.id_play),
+        });
+      },
+    },
+  ];
+
+  // Modifikasi renderVideoCards khusus untuk newlyAddedVideos
+  const renderVideoCards = (videoArray, withDropdown = false) => {
     if (loading) {
       return (
         <Col span={24} style={{ textAlign: "center", padding: "20px" }}>
@@ -88,13 +140,25 @@ const Home = () => {
     }
     return videoArray.map((video) => (
       <Col xs={24} sm={12} md={8} lg={6} xl={6} key={video.id_play} style={{ marginBottom: "16px" }}>
-        <Card
-          hoverable
-          cover={<img alt={video.play_name} src={video.play_thumbnail} style={{ height: "180px", objectFit: "cover" }} />}
-          onClick={() => window.open(video.play_url, "_blank")} // Mengubah navigasi ke URL YouTube
-        >
-          <Card.Meta title={video.play_name} />
-        </Card>
+        <div style={{ position: "relative" }}>
+          <Card
+            hoverable
+            cover={<img alt={video.play_name} src={video.play_thumbnail} style={{ height: "180px", objectFit: "cover" }} />}
+            onClick={() => window.open(video.play_url, "_blank")}
+          >
+            <Card.Meta title={video.play_name} />
+          </Card>
+          {withDropdown && (
+            <div
+              style={{ position: "absolute", top: 8, right: 8, zIndex: 2 }}
+              onClick={e => e.stopPropagation()} // Mencegah event bubbling ke Card
+            >
+              <Dropdown menu={{ items: getDropdownItems(video) }} trigger={["click"]} placement="bottomRight">
+                <MoreOutlined style={{ fontSize: 22, background: "#EA4D1E", color: "white", borderRadius: "50%", padding: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.12)", cursor: "pointer" }} />
+              </Dropdown>
+            </div>
+          )}
+        </div>
       </Col>
     ));
   };
@@ -115,13 +179,13 @@ const Home = () => {
       ) : (
         <>
           <h3 style={{ marginBottom: "16px" }}>Baru ditambahkan</h3>
-          <Row gutter={[16, 16]}>{renderVideoCards(newlyAddedVideos)}</Row>
+          <Row gutter={[16, 16]}>{renderVideoCards(newlyAddedVideos, true)}</Row>
 
           <h3 style={{ marginTop: "32px", marginBottom: "16px" }}>Minggu ini</h3>
-          <Row gutter={[16, 16]}>{renderVideoCards(thisWeekVideos)}</Row>
+          <Row gutter={[16, 16]}>{renderVideoCards(thisWeekVideos, true)}</Row>
 
           <h3 style={{ marginTop: "32px", marginBottom: "16px" }}>Bulan ini</h3>
-          <Row gutter={[16, 16]}>{renderVideoCards(thisMonthVideos)}</Row>
+          <Row gutter={[16, 16]}>{renderVideoCards(thisMonthVideos, true)}</Row>
         </>
       )}
     </div>

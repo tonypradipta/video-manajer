@@ -1,7 +1,8 @@
 import React from "react";
-import { Avatar, Card, Descriptions, Space, Button, message, Modal } from "antd";
+import { Button, Avatar, Card, Descriptions, Space, message } from "antd";
 import { UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { jwtStorage } from "../utils/jwt_storage";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -14,22 +15,11 @@ const Profile = () => {
     profilePic: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // Dummy profile picture URL
   };
 
-  const showConfirmLogout = () => {
-    Modal.confirm({
-      title: "Apakah Anda yakin ingin keluar?",
-      content: "Anda akan diarahkan kembali ke halaman login.",
-      okText: "Ya",
-      okType: "danger",
-      cancelText: "Tidak",
-      onOk() {
-        localStorage.removeItem("isLoggedIn");
-        message.success("Anda telah berhasil logout!");
-        navigate("/login");
-      },
-      onCancel() {
-        // Do nothing on cancel
-      },
-    });
+  const handleLogout = async () => {
+    await jwtStorage.removeItem();
+    localStorage.removeItem("isLoggedIn");
+    message.success("Logout berhasil");
+    navigate("/login");
   };
 
   return (
@@ -42,11 +32,6 @@ const Profile = () => {
           </Space>
         }
         style={{ marginBottom: "24px" }}
-        extra={
-          <Button type="primary" danger onClick={showConfirmLogout} style={{ backgroundColor: "#EA4D1E", borderColor: "#EA4D1E", color: "white" }}>
-            Logout
-          </Button>
-        }
       >
         <Descriptions bordered column={1}>
           <Descriptions.Item label="Email">
@@ -63,6 +48,9 @@ const Profile = () => {
           </Descriptions.Item>
           <Descriptions.Item label="Bio">{userData.bio}</Descriptions.Item>
         </Descriptions>
+        <Button type="primary" danger style={{ marginTop: 24 }} onClick={handleLogout}>
+          Logout
+        </Button>
       </Card>
     </div>
   );

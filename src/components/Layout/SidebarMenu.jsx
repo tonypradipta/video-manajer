@@ -28,7 +28,9 @@ const SidebarMenu = () => {
     try {
       const response = await getPlaylistByGroupId();
       if (response?.datas) {
-        const uniqueGenres = [...new Set(response.datas.map((video) => video.play_genre))];
+        let uniqueGenres = [...new Set(response.datas.map((video) => video.play_genre))];
+        uniqueGenres = uniqueGenres.map(g => g === 'song' ? 'music' : g);
+        uniqueGenres = [...new Set(uniqueGenres)].filter(g => g !== 'song');
         setGenres(uniqueGenres);
         console.log("Fetched Genres:", uniqueGenres);
       } else {

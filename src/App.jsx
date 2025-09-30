@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./components/Layout/MainLayout";
 import VideoList from "./pages/VideoList";
@@ -9,11 +9,6 @@ import Profile from "./pages/Profile";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
-  // Hapus status login saat aplikasi pertama dibuka untuk selalu menampilkan halaman login saat refresh
-  useEffect(() => {
-    localStorage.removeItem("isLoggedIn");
-  }, []);
-
   // Cek status login
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
 

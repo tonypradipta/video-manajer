@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Form, Input, Button, message, Card } from "antd";
+import { Form, Input, Button, message, Card, Select } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 import { getData, sendData, updateData as updateDataApi } from "../utils/api";
 
@@ -8,6 +8,7 @@ const VideoForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const [genreOptions, setGenreOptions] = useState([]);
 
   const getPlaylistByGroupId = async () => {
     try {
@@ -63,7 +64,24 @@ const VideoForm = () => {
     if (isEdit) {
       fetchVideo();
     }
+    fetchGenres();
   }, [id]);
+
+  const fetchGenres = async () => {
+    try {
+      const response = await getPlaylistByGroupId();
+      if (response?.datas) {
+        let uniqueGenres = [...new Set(response.datas.map((video) => video.play_genre))].filter(Boolean);
+        uniqueGenres = uniqueGenres.map(g => g === 'song' ? 'music' : g);
+        uniqueGenres = [...new Set(uniqueGenres)].filter(g => g !== 'song');
+        setGenreOptions(uniqueGenres);
+      } else {
+        setGenreOptions([]);
+      }
+    } catch (error) {
+      setGenreOptions([]);
+    }
+  };
 
   const fetchVideo = async () => {
     try {
@@ -145,7 +163,19 @@ const VideoForm = () => {
         </Form.Item>
 
         <Form.Item name="play_genre" label="Genre" rules={[{ required: true, message: "Mohon masukkan genre video" }]}>
-          <Input />
+          <Select
+            showSearch
+            placeholder="Pilih genre"
+            optionFilterProp="children"
+            filterOption={(input, option) => option.children.toLowerCase().includes(input.toLowerCase())}
+            allowClear
+          >
+            {genreOptions.map((genre) => (
+              <Select.Option key={genre} value={genre}>
+                {genre}
+              </Select.Option>
+            ))}
+          </Select>
         </Form.Item>
 
         <Form.Item name="play_description" label="Deskripsi" rules={[{ required: true, message: "Mohon masukkan deskripsi video" }]}>
